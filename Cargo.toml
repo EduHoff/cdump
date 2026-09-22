@@ -1,9 +1,11 @@
 [package]
 name = "cdump"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 description = "Extracts and dumps source code into a single structured text stream for code analysis."
 license = "AGPL-3.0-or-later"
 
 [dependencies]
 clap = { version = "4.6.7", features = ["derive"] }
+globset = "0.4.20"
+ignore = "0.4.33"
