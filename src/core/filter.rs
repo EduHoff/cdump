@@ -43,3 +43,124 @@ pub fn filter_files(
 
     Ok(filtered_files)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cli::Args;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_extension_filter() {
+        let args = Args {
+            target_dir: PathBuf::from("."),
+            recursive: false,
+            level: None,
+            ignore_patterns: vec![],
+            no_ignore: false,
+            extensions: vec![String::from("rs")],
+            head: None,
+            tail: None,
+            line_numbers: false,
+            output_file: None,
+        };
+
+        let files = vec![
+            PathBuf::from("main.rs"),
+            PathBuf::from("script.py"),
+            PathBuf::from("lib.rs"),
+        ];
+
+        let result = filter_files(files, &args)
+            .expect("failed to filter files by extension during unit test execution");
+
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&PathBuf::from("main.rs")));
+        assert!(result.contains(&PathBuf::from("lib.rs")));
+    }
+
+    #[test]
+    fn test_ignore_patterns_filter() {
+        let args = Args {
+            target_dir: PathBuf::from("."),
+            recursive: false,
+            level: None,
+            ignore_patterns: vec![String::from("*.log"), String::from("temp_*")],
+            no_ignore: false,
+            extensions: vec![],
+            head: None,
+            tail: None,
+            line_numbers: false,
+            output_file: None,
+        };
+
+        let files = vec![
+            PathBuf::from("main.rs"),
+            PathBuf::from("app.log"),
+            PathBuf::from("temp_data.txt"),
+            PathBuf::from("README.md"),
+        ];
+
+        let result = filter_files(files, &args)
+            .expect("failed to filter files by ignore patterns during unit test execution");
+
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&PathBuf::from("main.rs")));
+        assert!(result.contains(&PathBuf::from("README.md")));
+        assert!(!result.contains(&PathBuf::from("app.log")));
+        assert!(!result.contains(&PathBuf::from("temp_data.txt")));
+    }
+
+    #[test]
+    fn test_multiple_extensions_filter() {
+        let args = Args {
+            target_dir: PathBuf::from("."),
+            recursive: false,
+            level: None,
+            ignore_patterns: vec![],
+            no_ignore: false,
+            extensions: vec![String::from("rs"), String::from("toml")],
+            head: None,
+            tail: None,
+            line_numbers: false,
+            output_file: None,
+        };
+
+        let files = vec![
+            PathBuf::from("main.rs"),
+            PathBuf::from("Cargo.toml"),
+            PathBuf::from("script.py"),
+        ];
+
+        let result = filter_files(files, &args)
+            .expect("failed to filter files by multiple extensions during unit test execution");
+
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&PathBuf::from("main.rs")));
+        assert!(result.contains(&PathBuf::from("Cargo.toml")));
+        assert!(!result.contains(&PathBuf::from("script.py")));
+    }
+
+    #[test]
+    fn test_empty_files_input() {
+        let args = Args {
+            target_dir: PathBuf::from("."),
+            recursive: false,
+            level: None,
+            ignore_patterns: vec![],
+            no_ignore: false,
+            extensions: vec![String::from("rs")],
+            head: None,
+            tail: None,
+            line_numbers: false,
+            output_file: None,
+        };
+
+        let files = vec![];
+
+        let result = filter_files(files, &args)
+            .expect("failed to handle empty files list during unit test execution");
+
+        assert!(result.is_empty());
+    }
+}

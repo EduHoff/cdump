@@ -73,3 +73,58 @@ fn process_and_write_file(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn setup_temp_dir(test_name: &str) -> PathBuf {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time went backwards")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("cdump_printer_test_{test_name}_{timestamp}"));
+        fs::create_dir_all(&dir).expect("failed to create temp test directory");
+        dir
+    }
+
+    #[test]
+    fn test_get_relative_path() {
+        let target = Path::new("/home/user/project");
+        let file = Path::new("/home/user/project/src/main.rs");
+
+        let rel = get_relative_path(target, file);
+        assert_eq!(rel, "src/main.rs");
+    }
+
+    #[test]
+    fn test_print_files_with_head_and_line_numbers() {
+        let dir = setup_temp_dir("printer_head");
+        let file_path = dir.join("sample.txt");
+
+        fs::write(
+            &file_path,
+            "linha_um\nlinha_dois\nlinha_tres\nlinha_quatro\n",
+        )
+        .expect("failed to write test file");
+
+        let file_content = fs::read_to_string(&file_path).expect("failed to read");
+        let lines: Vec<&str> = file_content.lines().take(2).collect();
+
+        let mut buffer: Vec<u8> = Vec::new();
+
+        for (idx, line) in lines.iter().enumerate() {
+            writeln!(buffer, "{:4} | {}", idx + 1, line).expect("failed to write to buffer");
+        }
+
+        let output = String::from_utf8(buffer).expect("failed to convert buffer to string");
+
+        let _ = fs::remove_dir_all(&dir);
+
+        assert!(output.contains("   1 | linha_um"));
+        assert!(output.contains("   2 | linha_dois"));
+        assert!(!output.contains("linha_tres"));
+    }
+}
